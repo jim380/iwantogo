@@ -27,6 +27,7 @@ package main
 //  ============================================================================
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -46,6 +47,20 @@ import (
 )
 
 var addr = flag.String("addr", "api.wanchain.org:8443", "http service address")
+
+type params struct {
+	Address   string `json:"address"`
+	ChainType string `json:"chainType"`
+	Timestamp string `json:"timestamp"`
+	Signature string `json:"signature"`
+}
+
+type message struct {
+	JSONRPC string `json:"jsonrpc"`
+	Method  string `json:"method"`
+	Params  params `json:"params"`
+	ID      int64  `json:"id"`
+}
 
 func main() {
 	err := godotenv.Load("config.env")
@@ -93,23 +108,20 @@ func main() {
 		}
 	}()
 
-	type params struct {
-		Address   string `json:"address"`
-		ChainType string `json:"chainType"`
-		Timestamp string `json:"timestamp"`
-		Signature string `json:"signature"`
-	}
-
-	type message struct {
-		JSONRPC string `json:"jsonrpc"`
-		Method  string `json:"method"`
-		Params  params `json:"params"`
-		ID      int64  `json:"id"`
-	}
-
 	timeStamp := nowAsUnixMilli()
-	sig := getSig(secretKey, timeStamp)
 	msg := &message{
+		JSONRPC: "2.0",
+		Method:  "getBalance",
+		Params: params{
+			Address:   address,
+			ChainType: "WAN",
+			Timestamp: timeStamp,
+			// Signature: sig,
+		},
+		ID: 1,
+	}
+	sig := msg.getSig(secretKey)
+	msg = &message{
 		JSONRPC: "2.0",
 		Method:  "getBalance",
 		Params: params{
@@ -164,9 +176,12 @@ func nowAsUnixMilli() string {
 }
 
 // getSig generates a hmac sha256 signature
-func getSig(k string, m string) string {
+func (m *message) getSig(k string) string {
 	key := []byte(k)
-	message := []byte(m)
+	reqBodyBytes := new(bytes.Buffer)
+	json.NewEncoder(reqBodyBytes).Encode(m)
+
+	message := []byte(reqBodyBytes.Bytes())
 
 	// Create a new HMAC instance
 	hash := hmac.New(sha256.New, key)
