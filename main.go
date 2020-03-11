@@ -42,8 +42,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/jim380/node_tooling/Celo/util"
 	"github.com/joho/godotenv"
-	"github.com/node_tooling/Celo/util"
 )
 
 var addr = flag.String("addr", "api.wanchain.org:8443", "http service address")
@@ -60,6 +60,19 @@ type message struct {
 	Method  string `json:"method"`
 	Params  params `json:"params"`
 	ID      int64  `json:"id"`
+}
+
+type paramsSign struct {
+	Address   string `json:"address"`
+	ChainType string `json:"chainType"`
+	Timestamp string `json:"timestamp"`
+}
+
+type messageSign struct {
+	JSONRPC string     `json:"jsonrpc"`
+	Method  string     `json:"method"`
+	Params  paramsSign `json:"params"`
+	ID      int64      `json:"id"`
 }
 
 func main() {
@@ -109,10 +122,10 @@ func main() {
 	}()
 
 	timeStamp := nowAsUnixMilli()
-	msg := &message{
+	msg := &messageSign{
 		JSONRPC: "2.0",
 		Method:  "getBalance",
-		Params: params{
+		Params: paramsSign{
 			Address:   address,
 			ChainType: "WAN",
 			Timestamp: timeStamp,
@@ -121,13 +134,23 @@ func main() {
 		ID: 1,
 	}
 	sig := msg.getSig(secretKey)
-	msg.Params.Signature = sig
+	msgSend := &message{
+		JSONRPC: "2.0",
+		Method:  "getBalance",
+		Params: params{
+			Address:   address,
+			ChainType: "WAN",
+			Timestamp: timeStamp,
+			Signature: sig,
+		},
+		ID: 1,
+	}
 
-	json, _ := json.Marshal(msg)
+	json, _ := json.Marshal(msgSend)
 	stringJSON := string(json)
 	fmt.Println("\nJSON:", stringJSON)
 	// send message
-	connectionErr := c.WriteJSON(msg)
+	connectionErr := c.WriteJSON(msgSend)
 	if connectionErr != nil {
 		log.Println("write:", connectionErr)
 	}
@@ -166,12 +189,14 @@ func nowAsUnixMilli() string {
 }
 
 // getSig generates a hmac sha256 signature
-func (m *message) getSig(k string) string {
+func (m *messageSign) getSig(k string) string {
 	key := []byte(k)
 	reqBodyBytes := new(bytes.Buffer)
 	json.NewEncoder(reqBodyBytes).Encode(m)
 
-	message := []byte(reqBodyBytes.Bytes())
+	// message := []byte(reqBodyBytes.Bytes())
+
+	message, _ := json.Marshal(m)
 
 	// Create a new HMAC instance
 	hash := hmac.New(sha256.New, key)
