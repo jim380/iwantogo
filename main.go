@@ -121,17 +121,7 @@ func main() {
 		ID: 1,
 	}
 	sig := msg.getSig(secretKey)
-	msg = &message{
-		JSONRPC: "2.0",
-		Method:  "getBalance",
-		Params: params{
-			Address:   address,
-			ChainType: "WAN",
-			Timestamp: timeStamp,
-			Signature: sig,
-		},
-		ID: 1,
-	}
+	msg.Params.Signature = sig
 
 	json, _ := json.Marshal(msg)
 	stringJSON := string(json)
