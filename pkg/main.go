@@ -14,35 +14,41 @@ import (
 )
 
 type perform interface {
+	// Accounts
 	getBalance(key string, c *websocket.Conn)
+	getNonce(key string, c *websocket.Conn)
+	getNonceIncludePending(key string, c *websocket.Conn)
+	importAddress(key string, c *websocket.Conn)
+	// Blocks
+
 	getValidatorInfo(key string, c *websocket.Conn)
 }
 
-type paramsPostSign struct {
+type accountParamsPostSign struct {
 	Address   string `json:"address"`
 	ChainType string `json:"chainType"`
 	Timestamp string `json:"timestamp"`
 	Signature string `json:"signature"`
 }
 
-type messagePostSign struct {
-	JSONRPC string         `json:"jsonrpc"`
-	Method  string         `json:"method"`
-	Params  paramsPostSign `json:"params"`
-	ID      int64          `json:"id"`
+type accountMessagePostSign struct {
+	JSONRPC string                `json:"jsonrpc"`
+	Method  string                `json:"method"`
+	Params  accountParamsPostSign `json:"params"`
+	ID      int64                 `json:"id"`
 }
 
-type paramsPreSign struct {
+type accountParamsPreSign struct {
 	Address   string `json:"address"`
 	ChainType string `json:"chainType"`
 	Timestamp string `json:"timestamp"`
 }
 
-type messagePreSign struct {
-	JSONRPC string        `json:"jsonrpc"`
-	Method  string        `json:"method"`
-	Params  paramsPreSign `json:"params"`
-	ID      int64         `json:"id"`
+type accountMessagePreSign struct {
+	JSONRPC string               `json:"jsonrpc"`
+	Method  string               `json:"method"`
+	Params  accountParamsPreSign `json:"params"`
+	ID      int64                `json:"id"`
 }
 
 type messageRecv struct {
@@ -52,7 +58,7 @@ type messageRecv struct {
 }
 
 // genSig generates a hmac sha256 signature
-func (m *messagePreSign) genSig(k string) string {
+func (m *accountMessagePreSign) genSig(k string) string {
 	key := []byte(k)
 	reqBodyBytes := new(bytes.Buffer)
 	json.NewEncoder(reqBodyBytes).Encode(m)
@@ -72,7 +78,7 @@ func (m *messagePreSign) genSig(k string) string {
 	return signature
 }
 
-func (m *messagePostSign) sendMessage(c *websocket.Conn) {
+func (m *accountMessagePostSign) sendMessage(c *websocket.Conn) {
 	// ---	check JSON	--- //
 	// result, _ := json.Marshal(m)
 	// stringJSON := string(result)
@@ -90,12 +96,12 @@ func nowAsUnixMilli() string {
 }
 
 // NewReq instantiates a new RPC-JSON call
-func NewReq(addr string) *messagePreSign {
+func NewReq(addr string) *accountMessagePreSign {
 	timeStamp := nowAsUnixMilli()
-	msg := &messagePreSign{
+	msg := &accountMessagePreSign{
 		JSONRPC: "2.0",
 		// Method:  "getBalance",
-		Params: paramsPreSign{
+		Params: accountParamsPreSign{
 			Address:   addr,
 			ChainType: "WAN",
 			Timestamp: timeStamp,

@@ -2,13 +2,13 @@ package pkg
 
 import "github.com/gorilla/websocket"
 
-func (m *messagePreSign) getValidatorInfo(key string, c *websocket.Conn) {
+func (m *accountMessagePreSign) getValidatorInfo(key string, c *websocket.Conn) {
 	m.Method = "getValidatorInfo"
 	sig := m.genSig(key)
-	msgSend := &messagePostSign{
+	msgSend := &accountMessagePostSign{
 		JSONRPC: "2.0",
 		Method:  "getValidatorInfo",
-		Params: paramsPostSign{
+		Params: accountParamsPostSign{
 			Address:   m.Params.Address,
 			ChainType: "WAN",
 			Timestamp: m.Params.Timestamp,
@@ -20,7 +20,7 @@ func (m *messagePreSign) getValidatorInfo(key string, c *websocket.Conn) {
 	msgSend.sendMessage(c)
 }
 
-// GetValidatorInfo fetches the info of a specific validator account
+// GetValidatorInfo returns the info of a specific validator account
 func GetValidatorInfo(p perform, k string, c *websocket.Conn) {
 	p.getValidatorInfo(k, c)
 }
