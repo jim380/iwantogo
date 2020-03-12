@@ -48,31 +48,37 @@ import (
 
 var addr = flag.String("addr", "api.wanchain.org:8443", "http service address")
 
-type params struct {
+type paramsPostSign struct {
 	Address   string `json:"address"`
 	ChainType string `json:"chainType"`
 	Timestamp string `json:"timestamp"`
 	Signature string `json:"signature"`
 }
 
-type message struct {
-	JSONRPC string `json:"jsonrpc"`
-	Method  string `json:"method"`
-	Params  params `json:"params"`
-	ID      int64  `json:"id"`
+type messagePostSign struct {
+	JSONRPC string         `json:"jsonrpc"`
+	Method  string         `json:"method"`
+	Params  paramsPostSign `json:"params"`
+	ID      int64          `json:"id"`
 }
 
-type paramsSign struct {
+type paramsPreSign struct {
 	Address   string `json:"address"`
 	ChainType string `json:"chainType"`
 	Timestamp string `json:"timestamp"`
 }
 
-type messageSign struct {
-	JSONRPC string     `json:"jsonrpc"`
-	Method  string     `json:"method"`
-	Params  paramsSign `json:"params"`
-	ID      int64      `json:"id"`
+type messagePreSign struct {
+	JSONRPC string        `json:"jsonrpc"`
+	Method  string        `json:"method"`
+	Params  paramsPreSign `json:"params"`
+	ID      int64         `json:"id"`
+}
+
+type messageRecv struct {
+	JSONRPC string `json:"jsonrpc"`
+	Result  string `json:"result"`
+	ID      int64  `json:"id"`
 }
 
 func main() {
@@ -99,7 +105,9 @@ func main() {
 	}
 	log.Printf("connecting to %s", u.String())
 
-	// establish connection
+	//***************************************//
+	//      Establish WS Connection          //
+	//***************************************//
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal("dial:", err)
@@ -111,49 +119,30 @@ func main() {
 	go func() {
 		defer close(done)
 		for {
-			// receive message
+			// ---	receive message	--- //
 			_, message, err := c.ReadMessage()
 			if err != nil {
 				log.Println("read:", err)
 				return
 			}
+			fmt.Println("")
 			log.Printf("received: %s", message)
+			// ---	parse results	--- //
+			var msgRecv messageRecv
+			json.Unmarshal([]byte(message), &msgRecv)
+			fmt.Println(msgRecv.Result)
 		}
 	}()
 
-	timeStamp := nowAsUnixMilli()
-	msg := &messageSign{
-		JSONRPC: "2.0",
-		Method:  "getBalance",
-		Params: paramsSign{
-			Address:   address,
-			ChainType: "WAN",
-			Timestamp: timeStamp,
-			// Signature: sig,
-		},
-		ID: 1,
-	}
-	sig := msg.getSig(secretKey)
-	msgSend := &message{
-		JSONRPC: "2.0",
-		Method:  "getBalance",
-		Params: params{
-			Address:   address,
-			ChainType: "WAN",
-			Timestamp: timeStamp,
-			Signature: sig,
-		},
-		ID: 1,
-	}
-
-	json, _ := json.Marshal(msgSend)
-	stringJSON := string(json)
-	fmt.Println("\nJSON:", stringJSON)
-	// send message
-	connectionErr := c.WriteJSON(msgSend)
-	if connectionErr != nil {
-		log.Println("write:", connectionErr)
-	}
+	//***************************************//
+	//          Prepare Messages             //
+	//***************************************//
+	msg := newReq(address)
+	balance := msg.getBalance(secretKey)
+	balance.sendMessage(c)
+	msg = newReq(address)
+	valInfo := msg.getValidatorInfo(secretKey)
+	valInfo.sendMessage(c)
 
 	for {
 		select {
@@ -168,7 +157,9 @@ func main() {
 		case <-interrupt:
 			log.Println("interrupt")
 
-			// close connection gracefully
+			//***************************************//
+			//          close ws connection          //
+			//***************************************//
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "Connection closed"))
 			if err != nil {
 				log.Println("write close:", err)
@@ -188,27 +179,86 @@ func nowAsUnixMilli() string {
 	return strconv.FormatInt(timeInt, 10)
 }
 
-// getSig generates a hmac sha256 signature
-func (m *messageSign) getSig(k string) string {
+// genSig generates a hmac sha256 signature
+func (m *messagePreSign) genSig(k string) string {
 	key := []byte(k)
 	reqBodyBytes := new(bytes.Buffer)
 	json.NewEncoder(reqBodyBytes).Encode(m)
-
-	// message := []byte(reqBodyBytes.Bytes())
-
 	message, _ := json.Marshal(m)
 
-	// Create a new HMAC instance
 	hash := hmac.New(sha256.New, key)
-
-	// Write Data to it
 	hash.Write(message)
 
-	// Get signature and encode in base64
+	// ---	get signature and encode in base64	--- //
 	signature := base64.StdEncoding.EncodeToString(hash.Sum(nil))
 
-	// Get signature and encode in hex
+	// ---	get signature and encode in hex	--- //
 	// signature := hex.EncodeToString(hash.Sum(nil))
-	fmt.Println("\nSignature: " + signature)
+
+	// ---	check signature	--- //
+	// fmt.Println("\nSignature: " + signature)
 	return signature
+}
+
+func (m *messagePreSign) getBalance(key string) *messagePostSign {
+	m.Method = "getBalance"
+	sig := m.genSig(key)
+	msgSend := &messagePostSign{
+		JSONRPC: "2.0",
+		Method:  "getBalance",
+		Params: paramsPostSign{
+			Address:   m.Params.Address,
+			ChainType: "WAN",
+			Timestamp: m.Params.Timestamp,
+			Signature: sig,
+		},
+		ID: 1,
+	}
+
+	return msgSend
+}
+
+func (m *messagePreSign) getValidatorInfo(key string) *messagePostSign {
+	m.Method = "getValidatorInfo"
+	sig := m.genSig(key)
+	msgSend := &messagePostSign{
+		JSONRPC: "2.0",
+		Method:  "getValidatorInfo",
+		Params: paramsPostSign{
+			Address:   m.Params.Address,
+			ChainType: "WAN",
+			Timestamp: m.Params.Timestamp,
+			Signature: sig,
+		},
+		ID: 1,
+	}
+
+	return msgSend
+}
+
+func (m *messagePostSign) sendMessage(c *websocket.Conn) {
+	// ---	check JSON	--- //
+	// result, _ := json.Marshal(m)
+	// stringJSON := string(result)
+	// fmt.Println("\nJSON:", stringJSON)
+
+	connectionErr := c.WriteJSON(m)
+	if connectionErr != nil {
+		log.Println("write:", connectionErr)
+	}
+}
+
+func newReq(addr string) *messagePreSign {
+	timeStamp := nowAsUnixMilli()
+	msg := &messagePreSign{
+		JSONRPC: "2.0",
+		// Method:  "getBalance",
+		Params: paramsPreSign{
+			Address:   addr,
+			ChainType: "WAN",
+			Timestamp: timeStamp,
+		},
+		ID: 1,
+	}
+	return msg
 }
