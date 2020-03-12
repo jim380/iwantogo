@@ -36,9 +36,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/iwantogo/pkg/accounts"
-	account "github.com/iwantogo/pkg/accounts"
-	pos "github.com/iwantogo/pkg/pos"
+	account "github.com/iwantogo/accounts"
+	pos "github.com/iwantogo/pos"
 	"github.com/joho/godotenv"
 )
 
@@ -100,7 +99,7 @@ func main() {
 	//                Calls                  //
 	//***************************************//
 	msgAcct := account.NewReq(address)
-	accounts.GetBalance(msgAcct, secretKey, c)
+	account.GetBalance(msgAcct, secretKey, c)
 	msgPOS := pos.NewReq(address)
 	pos.GetValidatorInfo(msgPOS, secretKey, c)
 
