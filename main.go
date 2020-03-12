@@ -48,6 +48,11 @@ import (
 
 var addr = flag.String("addr", "api.wanchain.org:8443", "http service address")
 
+type perform interface {
+	getBalance(key string, c *websocket.Conn)
+	getValidatorInfo(key string, c *websocket.Conn)
+}
+
 type paramsPostSign struct {
 	Address   string `json:"address"`
 	ChainType string `json:"chainType"`
@@ -135,14 +140,12 @@ func main() {
 	}()
 
 	//***************************************//
-	//          Prepare Messages             //
+	//                Calls                  //
 	//***************************************//
 	msg := newReq(address)
-	balance := msg.getBalance(secretKey)
-	balance.sendMessage(c)
+	GetBalance(msg, secretKey, c)
 	msg = newReq(address)
-	valInfo := msg.getValidatorInfo(secretKey)
-	valInfo.sendMessage(c)
+	GetValidatorInfo(msg, secretKey, c)
 
 	for {
 		select {
@@ -200,7 +203,7 @@ func (m *messagePreSign) genSig(k string) string {
 	return signature
 }
 
-func (m *messagePreSign) getBalance(key string) *messagePostSign {
+func (m *messagePreSign) getBalance(key string, c *websocket.Conn) {
 	m.Method = "getBalance"
 	sig := m.genSig(key)
 	msgSend := &messagePostSign{
@@ -215,10 +218,22 @@ func (m *messagePreSign) getBalance(key string) *messagePostSign {
 		ID: 1,
 	}
 
-	return msgSend
+	msgSend.sendMessage(c)
 }
 
-func (m *messagePreSign) getValidatorInfo(key string) *messagePostSign {
+func (m *messagePostSign) sendMessage(c *websocket.Conn) {
+	// ---	check JSON	--- //
+	// result, _ := json.Marshal(m)
+	// stringJSON := string(result)
+	// fmt.Println("\nJSON:", stringJSON)
+
+	connectionErr := c.WriteJSON(m)
+	if connectionErr != nil {
+		log.Println("write:", connectionErr)
+	}
+}
+
+func (m *messagePreSign) getValidatorInfo(key string, c *websocket.Conn) {
 	m.Method = "getValidatorInfo"
 	sig := m.genSig(key)
 	msgSend := &messagePostSign{
@@ -233,19 +248,7 @@ func (m *messagePreSign) getValidatorInfo(key string) *messagePostSign {
 		ID: 1,
 	}
 
-	return msgSend
-}
-
-func (m *messagePostSign) sendMessage(c *websocket.Conn) {
-	// ---	check JSON	--- //
-	// result, _ := json.Marshal(m)
-	// stringJSON := string(result)
-	// fmt.Println("\nJSON:", stringJSON)
-
-	connectionErr := c.WriteJSON(m)
-	if connectionErr != nil {
-		log.Println("write:", connectionErr)
-	}
+	msgSend.sendMessage(c)
 }
 
 func newReq(addr string) *messagePreSign {
@@ -261,4 +264,14 @@ func newReq(addr string) *messagePreSign {
 		ID: 1,
 	}
 	return msg
+}
+
+// GetBalance fetches the balance of a specific account
+func GetBalance(p perform, k string, c *websocket.Conn) {
+	p.getBalance(k, c)
+}
+
+// GetValidatorInfo fetches the info of a specific validator's account
+func GetValidatorInfo(p perform, k string, c *websocket.Conn) {
+	p.getValidatorInfo(k, c)
 }
