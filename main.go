@@ -42,7 +42,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/jim380/node_tooling/Celo/util"
 	"github.com/joho/godotenv"
 )
 
@@ -96,7 +95,6 @@ func main() {
 	secretKey := os.Getenv("SECRET_KEY")
 	address := os.Getenv("ADDRESS")
 
-	util.SetEnv()
 	flag.Parse()
 	log.SetFlags(0)
 
