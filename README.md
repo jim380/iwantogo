@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	account "github.com/iwantogo/pkg/accounts"
-	pos "github.com/iwantogo/pkg/pos"
+	account "github.com/iwantogo/accounts"
+	block "github.com/iwantogo/blocks"
 	"github.com/joho/godotenv"
 )
 
@@ -36,6 +36,8 @@ func main() {
 	apiKey := os.Getenv("API_KEY")
 	secretKey := os.Getenv("SECRET_KEY")
 	address := os.Getenv("ADDRESS")
+	hash := "0xa3c8e3e61c6f33af4125cbddb4792b284b980918fcd71db1e91a847a785a7ddd"
+	height := "500"
 
 	flag.Parse()
 	log.SetFlags(0)
@@ -72,21 +74,35 @@ func main() {
 			}
 			fmt.Println("")
 			log.Printf("received: %s", message)
+			// ---	parse results	--- //
+			// var msgRecv iwantogo.MessageRecv
+			// json.Unmarshal([]byte(message), &msgRecv)
+			// fmt.Println(msgRecv.Result)
 		}
 	}()
 
 	//***************************************//
-	//                Test                   //
+	//            Example Calls              //
 	//***************************************//
 	msgAcct := account.NewReq(address)
-	accounts.GetBalance(msgAcct, secretKey, c)
+	account.GetBalance(msgAcct, secretKey, c)
 	msgPOS := pos.NewReq(address)
 	pos.GetValidatorInfo(msgPOS, secretKey, c)
+	msgBlkByHash := block.NewReqByHash(hash)
+	block.GetBlockTransactionCountByHash(msgBlkByHash, secretKey, c)
+	msgBlkByHeight := block.NewReqByHeight(height)
+	block.GetBlockTransactionCountByHeight(msgBlkByHeight, secretKey, c)
 
 	for {
 		select {
 		case <-done:
 			return
+		// case t := <-ticker.C:
+		// 	err := c.WriteMessage(websocket.TextMessage, []byte(t.String()))
+		// 	if err != nil {
+		// 		log.Println("write:", err)
+		// 		return
+		// 	}
 		case <-interrupt:
 			log.Println("interrupt")
 
@@ -106,4 +122,4 @@ func main() {
 		}
 	}
 }
-
+```
