@@ -37,7 +37,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	account "github.com/iwantogo/accounts"
-	pos "github.com/iwantogo/pos"
+	block "github.com/iwantogo/blocks"
 	"github.com/joho/godotenv"
 )
 
@@ -52,6 +52,8 @@ func main() {
 	apiKey := os.Getenv("API_KEY")
 	secretKey := os.Getenv("SECRET_KEY")
 	address := os.Getenv("ADDRESS")
+	hash := "0xa3c8e3e61c6f33af4125cbddb4792b284b980918fcd71db1e91a847a785a7ddd"
+	height := "500"
 
 	flag.Parse()
 	log.SetFlags(0)
@@ -100,8 +102,16 @@ func main() {
 	//***************************************//
 	msgAcct := account.NewReq(address)
 	account.GetBalance(msgAcct, secretKey, c)
-	msgPOS := pos.NewReq(address)
-	pos.GetValidatorInfo(msgPOS, secretKey, c)
+	// msgPOS := pos.NewReq(address)
+	// pos.GetValidatorInfo(msgPOS, secretKey, c)
+	// msgBlkByHash := block.NewReqByHash(hash)
+	// block.GetBlockByHash(msgBlkByHash, secretKey, c)
+	// msgBlkByHeight := block.NewReqByHeight(height)
+	// block.GetBlockByNumber(msgBlkByHeight, secretKey, c)
+	msgBlkByHash := block.NewReqByHash(hash)
+	block.GetBlockTransactionCountByHash(msgBlkByHash, secretKey, c)
+	msgBlkByHeight := block.NewReqByHeight(height)
+	block.GetBlockTransactionCountByHeight(msgBlkByHeight, secretKey, c)
 
 	for {
 		select {
