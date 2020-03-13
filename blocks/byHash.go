@@ -7,13 +7,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"log"
-	"strconv"
-	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/iwantogo/common"
 )
 
-type blockHashPerform interface {
+type blockExecutorHash interface {
 	getBlockByHash(key string, c *websocket.Conn)
 	getBlockTransactionCountByHash(k string, c *websocket.Conn)
 }
@@ -78,14 +77,9 @@ func (m *blockHashMessagePostSign) sendMessage(c *websocket.Conn) {
 	}
 }
 
-func nowAsUnixMilli() string {
-	timeInt := time.Now().UnixNano() / 1e6
-	return strconv.FormatInt(timeInt, 10)
-}
-
 // NewReqByHash instantiates a new RPC-JSON call
 func NewReqByHash(hash string) *blockHashMessagePreSign {
-	timeStamp := nowAsUnixMilli()
+	timeStamp := common.GetTimeStamp()
 	msg := &blockHashMessagePreSign{
 		JSONRPC: "2.0",
 		Params: blockHashParamsPreSign{
@@ -117,8 +111,8 @@ func (m *blockHashMessagePreSign) getBlockByHash(key string, c *websocket.Conn) 
 }
 
 // GetBlockByHash returns info of the block hash provided
-func GetBlockByHash(p blockHashPerform, k string, c *websocket.Conn) {
-	p.getBlockByHash(k, c)
+func GetBlockByHash(be blockExecutorHash, k string, c *websocket.Conn) {
+	be.getBlockByHash(k, c)
 }
 
 func (m *blockHashMessagePreSign) getBlockTransactionCountByHash(key string, c *websocket.Conn) {
@@ -140,6 +134,6 @@ func (m *blockHashMessagePreSign) getBlockTransactionCountByHash(key string, c *
 }
 
 // GetBlockTransactionCountByHash returns the transaction count of the block hash provided
-func GetBlockTransactionCountByHash(p blockHashPerform, k string, c *websocket.Conn) {
-	p.getBlockTransactionCountByHash(k, c)
+func GetBlockTransactionCountByHash(be blockExecutorHash, k string, c *websocket.Conn) {
+	be.getBlockTransactionCountByHash(k, c)
 }

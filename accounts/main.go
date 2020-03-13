@@ -7,13 +7,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"log"
-	"strconv"
-	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/iwantogo/common"
 )
 
-type accountPerform interface {
+type accountExecutor interface {
 	// Accounts
 	getBalance(key string, c *websocket.Conn)
 	getNonce(key string, c *websocket.Conn)
@@ -87,14 +86,9 @@ func (m *accountMessagePostSign) sendMessage(c *websocket.Conn) {
 	}
 }
 
-func nowAsUnixMilli() string {
-	timeInt := time.Now().UnixNano() / 1e6
-	return strconv.FormatInt(timeInt, 10)
-}
-
 // NewReq instantiates a new RPC-JSON call
 func NewReq(addr string) *accountMessagePreSign {
-	timeStamp := nowAsUnixMilli()
+	timeStamp := common.GetTimeStamp()
 	msg := &accountMessagePreSign{
 		JSONRPC: "2.0",
 		// Method:  "getBalance",
@@ -127,8 +121,8 @@ func (m *accountMessagePreSign) getBalance(key string, c *websocket.Conn) {
 }
 
 // GetBalance returns the balance of a specific account
-func GetBalance(p accountPerform, k string, c *websocket.Conn) {
-	p.getBalance(k, c)
+func GetBalance(ae accountExecutor, k string, c *websocket.Conn) {
+	ae.getBalance(k, c)
 }
 
 func (m *accountMessagePreSign) getNonce(key string, c *websocket.Conn) {
@@ -150,8 +144,8 @@ func (m *accountMessagePreSign) getNonce(key string, c *websocket.Conn) {
 }
 
 // GetNonce returns the nonce of an account
-func GetNonce(p accountPerform, k string, c *websocket.Conn) {
-	p.getNonce(k, c)
+func GetNonce(ae accountExecutor, k string, c *websocket.Conn) {
+	ae.getNonce(k, c)
 }
 
 func (m *accountMessagePreSign) getNonceIncludePending(key string, c *websocket.Conn) {
@@ -173,8 +167,8 @@ func (m *accountMessagePreSign) getNonceIncludePending(key string, c *websocket.
 }
 
 // GetNonceIncludePending returns the nonce of an account
-func GetNonceIncludePending(p accountPerform, k string, c *websocket.Conn) {
-	p.getNonceIncludePending(k, c)
+func GetNonceIncludePending(ae accountExecutor, k string, c *websocket.Conn) {
+	ae.getNonceIncludePending(k, c)
 }
 
 func (m *accountMessagePreSign) importAddress(key string, c *websocket.Conn) {
@@ -196,6 +190,6 @@ func (m *accountMessagePreSign) importAddress(key string, c *websocket.Conn) {
 }
 
 // ImportAddress sends an import address to BTC.
-func ImportAddress(p accountPerform, k string, c *websocket.Conn) {
-	p.importAddress(k, c)
+func ImportAddress(ae accountExecutor, k string, c *websocket.Conn) {
+	ae.importAddress(k, c)
 }

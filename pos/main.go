@@ -7,13 +7,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"log"
-	"strconv"
-	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/iwantogo/common"
 )
 
-type posPerform interface {
+type posExecutor interface {
 	getValidatorInfo(key string, c *websocket.Conn)
 }
 
@@ -77,14 +76,9 @@ func (m *posMessagePostSign) sendMessage(c *websocket.Conn) {
 	}
 }
 
-func nowAsUnixMilli() string {
-	timeInt := time.Now().UnixNano() / 1e6
-	return strconv.FormatInt(timeInt, 10)
-}
-
 // NewReq instantiates a new RPC-JSON call
 func NewReq(addr string) *posMessagePreSign {
-	timeStamp := nowAsUnixMilli()
+	timeStamp := common.GetTimeStamp()
 	msg := &posMessagePreSign{
 		JSONRPC: "2.0",
 		Params: posParamsPreSign{
@@ -116,6 +110,6 @@ func (m *posMessagePreSign) getValidatorInfo(key string, c *websocket.Conn) {
 }
 
 // GetValidatorInfo returns the info of a specific validator account
-func GetValidatorInfo(p posPerform, k string, c *websocket.Conn) {
-	p.getValidatorInfo(k, c)
+func GetValidatorInfo(pe posExecutor, k string, c *websocket.Conn) {
+	pe.getValidatorInfo(k, c)
 }

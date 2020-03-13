@@ -9,9 +9,10 @@ import (
 	"log"
 
 	"github.com/gorilla/websocket"
+	"github.com/iwantogo/common"
 )
 
-type blockHeightPerform interface {
+type blockExecutorHeight interface {
 	getBlockByNumber(key string, c *websocket.Conn)
 	getBlockTransactionCountByHeight(key string, c *websocket.Conn)
 }
@@ -78,7 +79,7 @@ func (m *blockHeightMessagePostSign) sendMessage(c *websocket.Conn) {
 
 // NewReqByHeight instantiates a new RPC-JSON call
 func NewReqByHeight(height string) *blockHeightMessagePreSign {
-	timeStamp := nowAsUnixMilli()
+	timeStamp := common.GetTimeStamp()
 	msg := &blockHeightMessagePreSign{
 		JSONRPC: "2.0",
 		Params: blockHeightParamsPreSign{
@@ -110,8 +111,8 @@ func (m *blockHeightMessagePreSign) getBlockByNumber(key string, c *websocket.Co
 }
 
 // GetBlockByNumber returns info of the block number provided
-func GetBlockByNumber(p blockHeightPerform, k string, c *websocket.Conn) {
-	p.getBlockByNumber(k, c)
+func GetBlockByNumber(be blockExecutorHeight, k string, c *websocket.Conn) {
+	be.getBlockByNumber(k, c)
 }
 
 func (m *blockHeightMessagePreSign) getBlockTransactionCountByHeight(key string, c *websocket.Conn) {
@@ -133,6 +134,6 @@ func (m *blockHeightMessagePreSign) getBlockTransactionCountByHeight(key string,
 }
 
 // GetBlockTransactionCountByHeight returns the info of a specific validator account
-func GetBlockTransactionCountByHeight(p blockHeightPerform, k string, c *websocket.Conn) {
-	p.getBlockTransactionCountByHeight(k, c)
+func GetBlockTransactionCountByHeight(be blockExecutorHeight, k string, c *websocket.Conn) {
+	be.getBlockTransactionCountByHeight(k, c)
 }
