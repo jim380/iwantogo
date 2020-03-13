@@ -1,13 +1,6 @@
 package pkg
 
 import (
-	"bytes"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/json"
-	"log"
-
 	"github.com/gorilla/websocket"
 	"github.com/iwantogo/common"
 )
@@ -43,39 +36,6 @@ type posMessagePostSign struct {
 	ID      int64             `json:"id"`
 }
 
-// genSig generates a hmac sha256 signature
-func (m *posMessagePreSign) genSig(k string) string {
-	key := []byte(k)
-	reqBodyBytes := new(bytes.Buffer)
-	json.NewEncoder(reqBodyBytes).Encode(m)
-	message, _ := json.Marshal(m)
-
-	hash := hmac.New(sha256.New, key)
-	hash.Write(message)
-
-	// ---	get signature and encode in base64	--- //
-	signature := base64.StdEncoding.EncodeToString(hash.Sum(nil))
-
-	// ---	get signature and encode in hex	--- //
-	// signature := hex.EncodeToString(hash.Sum(nil))
-
-	// ---	check signature	--- //
-	// fmt.Println("\nSignature: " + signature)
-	return signature
-}
-
-func (m *posMessagePostSign) sendMessage(c *websocket.Conn) {
-	// ---	check JSON	--- //
-	// result, _ := json.Marshal(m)
-	// stringJSON := string(result)
-	// fmt.Println("\nJSON:", stringJSON)
-
-	connectionErr := c.WriteJSON(m)
-	if connectionErr != nil {
-		log.Println("write:", connectionErr)
-	}
-}
-
 // NewReq instantiates a new RPC-JSON call
 func NewReq(addr string) *posMessagePreSign {
 	timeStamp := common.GetTimeStamp()
@@ -93,7 +53,7 @@ func NewReq(addr string) *posMessagePreSign {
 
 func (m *posMessagePreSign) getValidatorInfo(key string, c *websocket.Conn) {
 	m.Method = "getValidatorInfo"
-	sig := m.genSig(key)
+	sig := common.GenSig(m, key)
 	msgSend := &posMessagePostSign{
 		JSONRPC: "2.0",
 		Method:  "getValidatorInfo",
@@ -106,7 +66,7 @@ func (m *posMessagePreSign) getValidatorInfo(key string, c *websocket.Conn) {
 		ID: 1,
 	}
 
-	msgSend.sendMessage(c)
+	common.SendMessage(msgSend, c)
 }
 
 // GetValidatorInfo returns the info of a specific validator account

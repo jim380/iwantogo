@@ -1,13 +1,6 @@
 package accounts
 
 import (
-	"bytes"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/json"
-	"log"
-
 	"github.com/gorilla/websocket"
 	"github.com/iwantogo/common"
 )
@@ -53,39 +46,6 @@ type accountMessagePostSign struct {
 // 	ID      int64  `json:"id"`
 // }
 
-// genSig generates a hmac sha256 signature
-func (m *accountMessagePreSign) genSig(k string) string {
-	key := []byte(k)
-	reqBodyBytes := new(bytes.Buffer)
-	json.NewEncoder(reqBodyBytes).Encode(m)
-	message, _ := json.Marshal(m)
-
-	hash := hmac.New(sha256.New, key)
-	hash.Write(message)
-
-	// ---	get signature and encode in base64	--- //
-	signature := base64.StdEncoding.EncodeToString(hash.Sum(nil))
-
-	// ---	get signature and encode in hex	--- //
-	// signature := hex.EncodeToString(hash.Sum(nil))
-
-	// ---	check signature	--- //
-	// fmt.Println("\nSignature: " + signature)
-	return signature
-}
-
-func (m *accountMessagePostSign) sendMessage(c *websocket.Conn) {
-	// ---	check JSON	--- //
-	// result, _ := json.Marshal(m)
-	// stringJSON := string(result)
-	// fmt.Println("\nJSON:", stringJSON)
-
-	connectionErr := c.WriteJSON(m)
-	if connectionErr != nil {
-		log.Println("write:", connectionErr)
-	}
-}
-
 // NewReq instantiates a new RPC-JSON call
 func NewReq(addr string) *accountMessagePreSign {
 	timeStamp := common.GetTimeStamp()
@@ -104,7 +64,8 @@ func NewReq(addr string) *accountMessagePreSign {
 
 func (m *accountMessagePreSign) getBalance(key string, c *websocket.Conn) {
 	m.Method = "getBalance"
-	sig := m.genSig(key)
+	// sig := m.common.GenSig(key)
+	sig := common.GenSig(m, key)
 	msgSend := &accountMessagePostSign{
 		JSONRPC: "2.0",
 		Method:  "getBalance",
@@ -117,7 +78,7 @@ func (m *accountMessagePreSign) getBalance(key string, c *websocket.Conn) {
 		ID: 1,
 	}
 
-	msgSend.sendMessage(c)
+	common.SendMessage(msgSend, c)
 }
 
 // GetBalance returns the balance of a specific account
@@ -127,7 +88,7 @@ func GetBalance(ae accountExecutor, k string, c *websocket.Conn) {
 
 func (m *accountMessagePreSign) getNonce(key string, c *websocket.Conn) {
 	m.Method = "getNonce"
-	sig := m.genSig(key)
+	sig := common.GenSig(m, key)
 	msgSend := &accountMessagePostSign{
 		JSONRPC: "2.0",
 		Method:  "getNonce",
@@ -140,7 +101,7 @@ func (m *accountMessagePreSign) getNonce(key string, c *websocket.Conn) {
 		ID: 1,
 	}
 
-	msgSend.sendMessage(c)
+	common.SendMessage(msgSend, c)
 }
 
 // GetNonce returns the nonce of an account
@@ -150,7 +111,7 @@ func GetNonce(ae accountExecutor, k string, c *websocket.Conn) {
 
 func (m *accountMessagePreSign) getNonceIncludePending(key string, c *websocket.Conn) {
 	m.Method = "getNonceIncludePending"
-	sig := m.genSig(key)
+	sig := common.GenSig(m, key)
 	msgSend := &accountMessagePostSign{
 		JSONRPC: "2.0",
 		Method:  "getNonceIncludePending",
@@ -163,7 +124,7 @@ func (m *accountMessagePreSign) getNonceIncludePending(key string, c *websocket.
 		ID: 1,
 	}
 
-	msgSend.sendMessage(c)
+	common.SendMessage(msgSend, c)
 }
 
 // GetNonceIncludePending returns the nonce of an account
@@ -173,7 +134,7 @@ func GetNonceIncludePending(ae accountExecutor, k string, c *websocket.Conn) {
 
 func (m *accountMessagePreSign) importAddress(key string, c *websocket.Conn) {
 	m.Method = "importAddress"
-	sig := m.genSig(key)
+	sig := common.GenSig(m, key)
 	msgSend := &accountMessagePostSign{
 		JSONRPC: "2.0",
 		Method:  "importAddress",
@@ -186,7 +147,7 @@ func (m *accountMessagePreSign) importAddress(key string, c *websocket.Conn) {
 		ID: 1,
 	}
 
-	msgSend.sendMessage(c)
+	common.SendMessage(msgSend, c)
 }
 
 // ImportAddress sends an import address to BTC.

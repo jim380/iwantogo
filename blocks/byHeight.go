@@ -1,13 +1,6 @@
 package blocks
 
 import (
-	"bytes"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/json"
-	"log"
-
 	"github.com/gorilla/websocket"
 	"github.com/iwantogo/common"
 )
@@ -44,39 +37,6 @@ type blockHeightMessagePostSign struct {
 	ID      int64                     `json:"id"`
 }
 
-// genSig generates a hmac sha256 signature
-func (m *blockHeightMessagePreSign) genSig(k string) string {
-	key := []byte(k)
-	reqBodyBytes := new(bytes.Buffer)
-	json.NewEncoder(reqBodyBytes).Encode(m)
-	message, _ := json.Marshal(m)
-
-	hash := hmac.New(sha256.New, key)
-	hash.Write(message)
-
-	// ---	get signature and encode in base64	--- //
-	signature := base64.StdEncoding.EncodeToString(hash.Sum(nil))
-
-	// ---	get signature and encode in hex	--- //
-	// signature := hex.EncodeToString(hash.Sum(nil))
-
-	// ---	check signature	--- //
-	// fmt.Println("\nSignature: " + signature)
-	return signature
-}
-
-func (m *blockHeightMessagePostSign) sendMessage(c *websocket.Conn) {
-	// ---	check JSON	--- //
-	// result, _ := json.Marshal(m)
-	// stringJSON := string(result)
-	// fmt.Println("\nJSON:", stringJSON)
-
-	connectionErr := c.WriteJSON(m)
-	if connectionErr != nil {
-		log.Println("write:", connectionErr)
-	}
-}
-
 // NewReqByHeight instantiates a new RPC-JSON call
 func NewReqByHeight(height string) *blockHeightMessagePreSign {
 	timeStamp := common.GetTimeStamp()
@@ -94,7 +54,7 @@ func NewReqByHeight(height string) *blockHeightMessagePreSign {
 
 func (m *blockHeightMessagePreSign) getBlockByNumber(key string, c *websocket.Conn) {
 	m.Method = "getBlockByNumber"
-	sig := m.genSig(key)
+	sig := common.GenSig(m, key)
 	msgSend := &blockHeightMessagePostSign{
 		JSONRPC: "2.0",
 		Method:  "getBlockByNumber",
@@ -107,7 +67,7 @@ func (m *blockHeightMessagePreSign) getBlockByNumber(key string, c *websocket.Co
 		ID: 1,
 	}
 
-	msgSend.sendMessage(c)
+	common.SendMessage(msgSend, c)
 }
 
 // GetBlockByNumber returns info of the block number provided
@@ -117,7 +77,7 @@ func GetBlockByNumber(be blockExecutorHeight, k string, c *websocket.Conn) {
 
 func (m *blockHeightMessagePreSign) getBlockTransactionCountByHeight(key string, c *websocket.Conn) {
 	m.Method = "getBlockTransactionCount"
-	sig := m.genSig(key)
+	sig := common.GenSig(m, key)
 	msgSend := &blockHeightMessagePostSign{
 		JSONRPC: "2.0",
 		Method:  "getBlockTransactionCount",
@@ -130,7 +90,7 @@ func (m *blockHeightMessagePreSign) getBlockTransactionCountByHeight(key string,
 		ID: 1,
 	}
 
-	msgSend.sendMessage(c)
+	common.SendMessage(msgSend, c)
 }
 
 // GetBlockTransactionCountByHeight returns the info of a specific validator account
