@@ -108,6 +108,8 @@ func main() {
 	pos.GetValidatorSupStakeInfo(msgPOSByAddr, secretKey, c)
 	msgPOSByEpochID := pos.NewReqByEpochID(epochID)
 	pos.GetTimeByEpochID(msgPOSByEpochID, secretKey, c)
+	// msgPOS := pos.NewReq()
+	// pos.GetCurrentStakerInfo(msgPOS, secretKey, c)
 	// msgBlkByHash := block.NewReqByHash(hash)
 	// block.GetBlockByHash(msgBlkByHash, secretKey, c)
 	// msgBlkByHeight := block.NewReqByHeight(height)
