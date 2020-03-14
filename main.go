@@ -38,6 +38,7 @@ import (
 	"github.com/gorilla/websocket"
 	account "github.com/iwantogo/accounts"
 	block "github.com/iwantogo/blocks"
+	pos "github.com/iwantogo/pos"
 	"github.com/joho/godotenv"
 )
 
@@ -54,6 +55,7 @@ func main() {
 	address := os.Getenv("ADDRESS")
 	hash := "0xa3c8e3e61c6f33af4125cbddb4792b284b980918fcd71db1e91a847a785a7ddd"
 	height := "500"
+	epochID := 300
 
 	flag.Parse()
 	log.SetFlags(0)
@@ -102,8 +104,10 @@ func main() {
 	//***************************************//
 	msgAcct := account.NewReq(address)
 	account.GetBalance(msgAcct, secretKey, c)
-	// msgPOS := pos.NewReq(address)
-	// pos.GetValidatorInfo(msgPOS, secretKey, c)
+	msgPOSByAddr := pos.NewReqByAddr(address)
+	pos.GetValidatorSupStakeInfo(msgPOSByAddr, secretKey, c)
+	msgPOSByEpochID := pos.NewReqByEpochID(epochID)
+	pos.GetTimeByEpochID(msgPOSByEpochID, secretKey, c)
 	// msgBlkByHash := block.NewReqByHash(hash)
 	// block.GetBlockByHash(msgBlkByHash, secretKey, c)
 	// msgBlkByHeight := block.NewReqByHeight(height)
