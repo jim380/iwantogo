@@ -22,6 +22,7 @@ import (
 	"github.com/gorilla/websocket"
 	account "github.com/iwantogo/accounts"
 	block "github.com/iwantogo/blocks"
+	pos "github.com/iwantogo/pos"
 	"github.com/joho/godotenv"
 )
 
@@ -37,7 +38,10 @@ func main() {
 	secretKey := os.Getenv("SECRET_KEY")
 	address := os.Getenv("ADDRESS")
 	hash := "0xa3c8e3e61c6f33af4125cbddb4792b284b980918fcd71db1e91a847a785a7ddd"
+	addresses := []string{"0x7212b9e259792879d85ca3227384f1005437e5f5", "0xfc2730f75330bb75cb28fcff12f0aea5b6e433e1", "0x4ee67553ab5fa994bc6a9cefecc93ff134083343"}
+	btcAddresses := []string{"19JEuWZbssQpXLMutL2cJeW2arqamnLCSP"}
 	height := "500"
+	epochID := 300
 
 	flag.Parse()
 	log.SetFlags(0)
@@ -82,12 +86,16 @@ func main() {
 	}()
 
 	//***************************************//
-	//            Example Calls              //
+	//                Calls                  //
 	//***************************************//
-	msgAcct := account.NewReq(address)
-	account.GetBalance(msgAcct, secretKey, c)
-	msgPOS := pos.NewReq(address)
-	pos.GetValidatorInfo(msgPOS, secretKey, c)
+	msgAcct := account.NewReqMulti(addresses)
+	account.GetMultiBalances(msgAcct, secretKey, c)
+	msgAcct := account.NewReqUTXO(btcAddresses, 0, 6)
+	account.GetUTXO(msgAcct, secretKey, c)
+	msgPOSByAddr := pos.NewReqByAddr(address)
+	pos.GetValidatorSupStakeInfo(msgPOSByAddr, secretKey, c)
+	msgPOSByEpochID := pos.NewReqByEpochID(epochID)
+	pos.GetTimeByEpochID(msgPOSByEpochID, secretKey, c)
 	msgBlkByHash := block.NewReqByHash(hash)
 	block.GetBlockTransactionCountByHash(msgBlkByHash, secretKey, c)
 	msgBlkByHeight := block.NewReqByHeight(height)
@@ -97,12 +105,6 @@ func main() {
 		select {
 		case <-done:
 			return
-		// case t := <-ticker.C:
-		// 	err := c.WriteMessage(websocket.TextMessage, []byte(t.String()))
-		// 	if err != nil {
-		// 		log.Println("write:", err)
-		// 		return
-		// 	}
 		case <-interrupt:
 			log.Println("interrupt")
 
