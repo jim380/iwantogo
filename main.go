@@ -38,6 +38,7 @@ import (
 	"github.com/gorilla/websocket"
 	account "github.com/iwantogo/accounts"
 	block "github.com/iwantogo/blocks"
+	common "github.com/iwantogo/common"
 	pos "github.com/iwantogo/pos"
 	"github.com/joho/godotenv"
 )
@@ -94,10 +95,7 @@ func main() {
 			}
 			fmt.Println("")
 			log.Printf("received: %s", message)
-			// ---	parse results	--- //
-			// var msgRecv iwantogo.MessageRecv
-			// json.Unmarshal([]byte(message), &msgRecv)
-			// fmt.Println(msgRecv.Result)
+			common.ParseRes(message)
 		}
 	}()
 

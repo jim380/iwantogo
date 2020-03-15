@@ -40,12 +40,6 @@ type accountMessagePostSign struct {
 	ID      int64                 `json:"id"`
 }
 
-// type messageRecv struct {
-// 	JSONRPC string `json:"jsonrpc"`
-// 	Result  string `json:"result"`
-// 	ID      int64  `json:"id"`
-// }
-
 // NewReq instantiates a new RPC-JSON call
 func NewReq(addr string) *accountMessagePreSign {
 	timeStamp := common.GetTimeStamp()

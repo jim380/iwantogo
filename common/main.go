@@ -6,12 +6,19 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+type messageRecv struct {
+	JSONRPC string  `json:"jsonrpc"`
+	Result  float64 `json:"result"`
+	ID      int64   `json:"id"`
+}
 
 // GetTimeStamp returns a timestamp in milliseconds
 func GetTimeStamp() string {
@@ -50,4 +57,16 @@ func SendMessage(m interface{}, c *websocket.Conn) {
 	if connectionErr != nil {
 		log.Println("write:", connectionErr)
 	}
+}
+
+// ParseRes unmarshals the JSON result
+func ParseRes(res []byte) {
+	var m messageRecv
+	err := json.Unmarshal(res, &m)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	//fmt.Println(reflect.TypeOf(m.Result))
+	fmt.Println("Parsed Result:", m.Result)
 }
