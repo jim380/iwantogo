@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -17,8 +18,10 @@ import (
 type messageRecv struct {
 	JSONRPC string  `json:"jsonrpc"`
 	Result  float64 `json:"result"`
-	ID      int64   `json:"id"`
+	ID      float64 `json:"id"`
 }
+
+var arbitraryJSON map[string]interface{}
 
 // GetTimeStamp returns a timestamp in milliseconds
 func GetTimeStamp() string {
@@ -62,11 +65,33 @@ func SendMessage(m interface{}, c *websocket.Conn) {
 // ParseRes unmarshals the JSON result
 func ParseRes(res []byte) {
 	var m messageRecv
-	err := json.Unmarshal(res, &m)
+	err := json.Unmarshal(res, &arbitraryJSON)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	//fmt.Println(reflect.TypeOf(m.Result))
+
+	for key, value := range arbitraryJSON {
+		switch key {
+		case "jsonrpc":
+			// fmt.Println("jsonrpc:", value)
+			m.JSONRPC = value.(string)
+		case "id":
+			// fmt.Println("id:", value)
+			m.ID = value.(float64)
+		case "result":
+			// fmt.Println("result:", value)
+			switch v := value.(type) {
+			case float64:
+				// fmt.Printf("result: result(%v) is of type(%v)\n", v, reflect.TypeOf(v).Name())
+				m.Result = value.(float64)
+			default:
+				fmt.Printf("result: unrecognized type (%v)\n", reflect.TypeOf(v).Name())
+				fmt.Println(v)
+				m.Result = 0.0
+			}
+
+		}
+	}
 	fmt.Println("Parsed Result:", m.Result)
 }
