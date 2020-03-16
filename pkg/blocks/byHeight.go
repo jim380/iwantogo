@@ -2,7 +2,7 @@ package blocks
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/iwantogo/common"
+	"github.com/iwantogo/pkg/common"
 )
 
 type blockExecutorHeight interface {

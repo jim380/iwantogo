@@ -2,7 +2,7 @@ package accounts
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/iwantogo/common"
+	"github.com/iwantogo/pkg/common"
 )
 
 type accountUTXOExecutor interface {

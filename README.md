@@ -20,9 +20,10 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	account "github.com/iwantogo/accounts"
-	block "github.com/iwantogo/blocks"
-	pos "github.com/iwantogo/pos"
+	account "github.com/iwantogo/pkg/accounts"
+	block "github.com/iwantogo/pkg/blocks"
+	common "github.com/iwantogo/pkg/common"
+	pos "github.com/iwantogo/pkg/pos"
 	"github.com/joho/godotenv"
 )
 

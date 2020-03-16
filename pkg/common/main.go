@@ -21,6 +21,18 @@ type messageRecv struct {
 	ID      float64 `json:"id"`
 }
 
+type resultMap struct {
+	Address          string  `json:"address"`
+	StakeIn          float64 `json:"stakeIn"`
+	StakeInTimestamp float64 `json:"stakeInTimestamp"`
+}
+
+type messageRecvMap struct {
+	JSONRPC string `json:"jsonrpc"`
+	resultMap
+	ID float64 `json:"id"`
+}
+
 var messageRecvWrapper map[string]interface{}
 
 // GetTimeStamp returns a timestamp in milliseconds
@@ -62,7 +74,7 @@ func SendMessage(m interface{}, c *websocket.Conn) {
 	}
 }
 
-// ParseRes unmarshals the JSON result
+// ParseRes dynamically unmarshals JSON messages
 func ParseRes(res []byte) {
 	var m messageRecv
 	err := json.Unmarshal(res, &messageRecvWrapper)
@@ -83,19 +95,30 @@ func ParseRes(res []byte) {
 			v := reflect.TypeOf(value).Kind()
 			switch v {
 			case reflect.Float64:
-				// fmt.Printf("result: result(%v) is of type(%v)\n", v, reflect.TypeOf(v).Name())
 				m.Result = value.(float64)
-				fmt.Println("Parsed Result:", m.Result)
+				fmt.Println("Result:", m.Result)
 			case reflect.Slice:
-				fmt.Printf("type: can't parse type (%v)\n", v.String())
+				var mrm messageRecvMap
+				val := reflect.ValueOf(value)
+				if val.Len() == 0 {
+					log.Println("Result is empty!")
+					break
+				}
+				for i := 0; i < val.Len(); i++ {
+					elm := val.Index(i).Interface().(map[string]interface{})
+					mrm.JSONRPC = m.JSONRPC
+					mrm.ID = m.ID
+					mrm.Address = elm["address"].(string)
+					mrm.StakeIn = elm["stakeIn"].(float64)
+					mrm.StakeInTimestamp = elm["stakeInTimestamp"].(float64)
+					// fmt.Println(mrm.Address, mrm.StakeIn, mrm.StakeInTimestamp)
+					fmt.Println("Result:", mrm.resultMap)
+				}
 			default:
-				fmt.Println("value:", value)
-				fmt.Printf("type: unrecognized type (%v)\n", v.String())
-				// fmt.Println(v)
-				// m.Result = 0.0
-
+				fmt.Printf("value: %v\n", reflect.ValueOf(value))
+				fmt.Printf("type: %v\n", reflect.ValueOf(value).Kind())
+				fmt.Printf("error: unrecognized type (%v)\n", v.String())
 			}
 		}
 	}
-	// fmt.Println("Parsed Result:", m.Result)
 }
