@@ -21,7 +21,7 @@ type messageRecv struct {
 	ID      float64 `json:"id"`
 }
 
-var arbitraryJSON map[string]interface{}
+var messageRecvWrapper map[string]interface{}
 
 // GetTimeStamp returns a timestamp in milliseconds
 func GetTimeStamp() string {
@@ -65,13 +65,13 @@ func SendMessage(m interface{}, c *websocket.Conn) {
 // ParseRes unmarshals the JSON result
 func ParseRes(res []byte) {
 	var m messageRecv
-	err := json.Unmarshal(res, &arbitraryJSON)
+	err := json.Unmarshal(res, &messageRecvWrapper)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	for key, value := range arbitraryJSON {
+	for key, value := range messageRecvWrapper {
 		switch key {
 		case "jsonrpc":
 			// fmt.Println("jsonrpc:", value)
@@ -80,18 +80,22 @@ func ParseRes(res []byte) {
 			// fmt.Println("id:", value)
 			m.ID = value.(float64)
 		case "result":
-			// fmt.Println("result:", value)
-			switch v := value.(type) {
-			case float64:
+			v := reflect.TypeOf(value).Kind()
+			switch v {
+			case reflect.Float64:
 				// fmt.Printf("result: result(%v) is of type(%v)\n", v, reflect.TypeOf(v).Name())
 				m.Result = value.(float64)
+				fmt.Println("Parsed Result:", m.Result)
+			case reflect.Slice:
+				fmt.Printf("type: can't parse type (%v)\n", v.String())
 			default:
-				fmt.Printf("result: unrecognized type (%v)\n", reflect.TypeOf(v).Name())
-				fmt.Println(v)
-				m.Result = 0.0
-			}
+				fmt.Println("value:", value)
+				fmt.Printf("type: unrecognized type (%v)\n", v.String())
+				// fmt.Println(v)
+				// m.Result = 0.0
 
+			}
 		}
 	}
-	fmt.Println("Parsed Result:", m.Result)
+	// fmt.Println("Parsed Result:", m.Result)
 }
